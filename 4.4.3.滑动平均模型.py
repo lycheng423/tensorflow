@@ -12,7 +12,7 @@ import tensorflow as tf
 # 如果在 ExponentialMovingAverage 初始化时提供了 num_updates 参数，那么每次使用的 衰减率将是:
 # min{decay, (1 + num_updates) / (10 + num_updates)}
 
-# 定义一个变量用于计算滑动平均，这个变贤的初始值为 0。
+# 定义一个变量用于计算滑动平均，这个变量的初始值为 0。
 # 注意这里手动指定了变量的类型为tf.float32,因为所有需要计算滑动平均的变量必须是实数型。
 vl = tf.Variable(0, dtype=tf.float32)
 # 这里step变ft模拟神经网络中迭代的轮数，可以用于动态控制衰减率。
