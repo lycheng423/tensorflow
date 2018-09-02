@@ -1,7 +1,17 @@
 from tensorflow.examples.tutorials.mnist import input_data
 
-# 载入MNIST数据集，如果指定地址/path/to/MNIST_data 下没有已经下载好的数据，
-# 那么TensorFlow 会自动从表5-1给出的网址下载数据
+# 训练集与测试集数据的下载
+# 训练集图片 - 55000 张 训练图片, 5000 张 验证图片
+# http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
+# 训练集图片对应的数字标签
+# http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
+# 测试集图片 - 10000 张 图片
+# http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
+# 测试集图片对应的数字标签
+# http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+
+# 载入MNIST数据集，如果指定地址/path/to/MNIST_data下没有已经下载好的数据，
+# 那么TensorFlow 会自动从上面的网址下载数据
 mnist = input_data.read_data_sets("/data/MNIST_data/", one_hot=True)
 
 # 数据集	                目的
