@@ -106,8 +106,8 @@ def train(mnist):
     regularization = regularizer(weightsl) + regularizer(weights2)
     # 总损失等于交叉熵损失和正则化损失的和。
     loss = cross_entropy_mean + regularization
-    # 设置指数衰减的学习率。
 
+    # 设置指数衰减的学习率。
     learning_rate = tf.train.exponential_decay(
         # 基础的学习率，随着迭代的进行，更新变量时使用的学习率在这个基础上递减。
         LEARNING_RATE_BASE,
