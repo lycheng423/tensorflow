@@ -32,22 +32,22 @@ MOVING_AVERAGE_DECAY = 0.99
 # 通过加入隐藏层实现了多层网络结构, 通过ReLU激活函数实现了去线性化。
 # 在这个函数中也支持传入用于计算参数平均值的类，这样方便在测试时使用滑动平均模型。
 
-def inference(input_tensor, avg_class, weightsl, biasesl, weights2, biases2):
+def inference(input_tensor, avg_class, weights1, biases1, weights2, biases2):
     # 当没有提供滑动平均类时，直接使用参数当前的取值。
     if avg_class == None:
         # 计算隐藏层的前向传播结果，这里使用了 ReLU 激活函数。
-        layerl = tf.nn.relu(tf.matmul(input_tensor, weightsl) + biasesl)
+        layer1 = tf.nn.relu(tf.matmul(input_tensor, weights1) + biases1)
         # 计算输出层的前向传播结果。因为在计算损失函数时会一并计算softmax函数。
         # 所以这里不耑要加入激活函数，而且不加入softmax不会影响预测结果。
         # 因为预测时使用的是不同类别对应节点输出值的相对大小，有没有 softmax 层对最后分类结果的计算没有影响。
         # 于是在计算整个神经网络的前向传播时可以不加入最后的softmax层。
-        return tf.matmul(layerl, weights2) + biases2
+        return tf.matmul(layer1, weights2) + biases2
     else:
         # 首先使用avg_class.average函数来计算得出变量的滑动平均值，然后再计算相运的神经网络前向传播结果。
-        layerl = tf.nn.relu(
-            tf.matmul(input_tensor, avg_class.average(weightsl)) + avg_class.average(biasesl)
+        layer1 = tf.nn.relu(
+            tf.matmul(input_tensor, avg_class.average(weights1)) + avg_class.average(biases1)
         )
-        return tf.matmul(layerl, avg_class.average(weights2)) + avg_class.average(biases2)
+        return tf.matmul(layer1, avg_class.average(weights2)) + avg_class.average(biases2)
 
 
 # 训练模型的过程。
@@ -55,10 +55,10 @@ def train(mnist):
     x = tf.placeholder(tf.float32, [None, INPUT_NODE], name='x-input')
     y_ = tf.placeholder(tf.float32, [None, OUTPUT_NODE], name='y-input')
     # 生成隐藏层的参数。
-    weightsl = tf.Variable(
+    weights1 = tf.Variable(
         tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1)
     )
-    biasesl = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
+    biases1 = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
 
     # 生成输出层的参数。
     weights2 = tf.Variable(
@@ -68,7 +68,7 @@ def train(mnist):
 
     # 计算在当前参数下神经网络前向传播的结果。
     # 这里给出的用于计算滑动平均的类为 None,所以函数不会使用参数的滑动平均值。
-    y = inference(x, None, weightsl, biasesl, weights2, biases2)
+    y = inference(x, None, weights1, biases1, weights2, biases2)
 
     # 定义存储训练轮数的变量。
     # 这个变量不需要计算滑动平均值，所以这里指定这个变量为不可训练的变量(trainable=Fasle)。
@@ -87,7 +87,7 @@ def train(mnist):
     # 计算使用了滑动平均之后的前向传播结果。
     # 第 4 章中介绍过滑动平均不会改变变量本身的取值，而是会维护一个影子变量来记录其滑动平均值。
     # 所以当需要使用这个滑动平均值时, 需要明确调用average函数。
-    average_y = inference(x, variable_averages, weightsl, biasesl, weights2, biases2)
+    average_y = inference(x, variable_averages, weights1, biases1, weights2, biases2)
 
     # 计算交叉熵作为刻画预测值和真实值之间差距的损失函数。
     # 这里使用了TensorFlow中提供的sparse_softmax_cross_entropy_with_logits函数来计算交叉熵。
@@ -103,7 +103,7 @@ def train(mnist):
     # 计算 L2 正则化损失函数。
     regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)
     # 计算模型的正则化损失。一般只计算神经网运边上权重的正则化损失，而不使用偏置项。
-    regularization = regularizer(weightsl) + regularizer(weights2)
+    regularization = regularizer(weights1) + regularizer(weights2)
     # 总损失等于交叉熵损失和正则化损失的和。
     loss = cross_entropy_mean + regularization
 
@@ -119,52 +119,52 @@ def train(mnist):
         LEARNING_RATE_DECAY
     )
 
-    # 使用tf.train.GradientDescentOptimizer优化算法来优化损失函数。
-    # 注意这里损失函数包含了交叉熵损失和L2正则化损失。
-    train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(
-        loss, global_step=global_step)
-    # 在训练神经网络模型时，每过一遍数据既需要通过反向传播来更新神经网络中的参数，又要更新每一个参数的滑动平均值。
-    # 为了一次完成多个操作，TenorFlow提供了tf.control_dependencies和tf.group两种机制。
-    # 下面两行程序和train_op = tf.group(train_step, variables_averages_op)是等价的
-    with tf.control_dependencies([train_step, variables_averages_op]):
-        train_op = tf.no_op(name='train')
+# 使用tf.train.GradientDescentOptimizer优化算法来优化损失函数。
+# 注意这里损失函数包含了交叉熵损失和L2正则化损失。
+train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(
+    loss, global_step=global_step)
+# 在训练神经网络模型时，每过一遍数据既需要通过反向传播来更新神经网络中的参数，又要更新每一个参数的滑动平均值。
+# 为了一次完成多个操作，TenorFlow提供了tf.control_dependencies和tf.group两种机制。
+# 下面两行程序和train_op = tf.group(train_step, variables_averages_op)是等价的
+with tf.control_dependencies([train_step, variables_averages_op]):
+    train_op = tf.no_op(name='train')
 
-    # 检验使用了滑动平均模型的神经网络前向传播结果是否正确。
-    # tf.argmax(average_y, 1)计算每一个样例的预测答案。
-    # 其中 average_y 是一个 batch_size*10 的二维数组，每一行表示一个样例的前向传播结果。
-    # tf.argmax的第二个参数"1"表示选取最大值的操作仅在第一个维度中进行，即只在每一行选取最大值对应的下标。
-    # 于是得到的结果是一个长度为batch的一维数组，这个一维数组中的值就表示了每一个样例对应的数字识别结果。
-    # tf.equal判断两个张量的每一维是否相等，如果相等返回True, 否则返回False。
-    correct_prediction = tf.equal(tf.argmax(average_y, 1), tf.argmax(y_, 1))
-    # 这个运算首先将一个布尔型的数值转换为实数型，然后计算平均值。这个平均值就是模型在这一组数据上的正确率。
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+# 检验使用了滑动平均模型的神经网络前向传播结果是否正确。
+# tf.argmax(average_y, 1)计算每一个样例的预测答案。
+# 其中 average_y 是一个 batch_size*10 的二维数组，每一行表示一个样例的前向传播结果。
+# tf.argmax的第二个参数"1"表示选取最大值的操作仅在第一个维度中进行，即只在每一行选取最大值对应的下标。
+# 于是得到的结果是一个长度为batch的一维数组，这个一维数组中的值就表示了每一个样例对应的数字识别结果。
+# tf.equal判断两个张量的每一维是否相等，如果相等返回True, 否则返回False。
+correct_prediction = tf.equal(tf.argmax(average_y, 1), tf.argmax(y_, 1))
+# 这个运算首先将一个布尔型的数值转换为实数型，然后计算平均值。这个平均值就是模型在这一组数据上的正确率。
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 
-    # 初始化会话并开始训练过程。
-    with tf.Session() as sess:
-        tf.initialize_all_variables().run()
-        # 准备验证数据。一般在神经网络的训练过程中会通过验证数据来大致判断停止的条件和评判训练的效果。
-        validate_feed = {x: mnist.validation.images, y_:mnist.validation. labels}
+# 初始化会话并开始训练过程。
+with tf.Session() as sess:
+    tf.initialize_all_variables().run()
+    # 准备验证数据。一般在神经网络的训练过程中会通过验证数据来大致判断停止的条件和评判训练的效果。
+    validate_feed = {x: mnist.validation.images, y_:mnist.validation. labels}
 
-    # 准备测试数据。在真实的应用中，这部分数据在训练时是不可见的，这个数据只是作为模 # 型优劣的最后评价标准。
-    test_feed = {x: mnist.test.images, y_: mnist.test.labels}
-    # 迭代地训练神经网络。
-    for i in range(TRAINING_STEPS):
-        # 每 1000 轮输出一次在验证数据集上的测试结果。
-        if i % 1000 == 0:
-            # 计算滑动平均模型在验证数据上的结果。因为 MNIST数据集比较小，所以一次可以处理所有的验证数据。
-            # 为了计算方便，本样例程序没有将验证数据划分为更小的batch。
-            # 当神经网络模型比较复杂或者验证数据比较大时，太大的batch会导致计算时间过长甚至发生内存溢出的错误。
-            validate_acc = sess.run(accuracy, feed_dict=validate_feed)
-            print("After %d training step(s), validation accuracy "
-                  "using average model is %g " % (i, validate_acc))
-            # 产生这一轮使用的一个 batch 的训练数据，并运行训练过程。
-            xs, ys = mnist.train.next_batch(BATCH_SIZE)
-            sess.run(train_op, feed_dict={x: xs, y_: ys})
-            # 在训练结束之后，在测试数据上检测神经网络模型的最终正确率。
-            test_acc = sess.run(accuracy, feed_dict=test_feed)
-            print("After %d training step(s), test accuracy using average "
-                  "model is %g" % (TRAINING_STEPS, test_acc))
+# 准备测试数据。在真实的应用中，这部分数据在训练时是不可见的，这个数据只是作为模 # 型优劣的最后评价标准。
+test_feed = {x: mnist.test.images, y_: mnist.test.labels}
+# 迭代地训练神经网络。
+for i in range(TRAINING_STEPS):
+    # 每 1000 轮输出一次在验证数据集上的测试结果。
+    if i % 1000 == 0:
+        # 计算滑动平均模型在验证数据上的结果。因为 MNIST数据集比较小，所以一次可以处理所有的验证数据。
+        # 为了计算方便，本样例程序没有将验证数据划分为更小的batch。
+        # 当神经网络模型比较复杂或者验证数据比较大时，太大的batch会导致计算时间过长甚至发生内存溢出的错误。
+        validate_acc = sess.run(accuracy, feed_dict=validate_feed)
+        print("After %d training step(s), validation accuracy "
+              "using average model is %g " % (i, validate_acc))
+        # 产生这一轮使用的一个 batch 的训练数据，并运行训练过程。
+        xs, ys = mnist.train.next_batch(BATCH_SIZE)
+        sess.run(train_op, feed_dict={x: xs, y_: ys})
+        # 在训练结束之后，在测试数据上检测神经网络模型的最终正确率。
+        test_acc = sess.run(accuracy, feed_dict=test_feed)
+        print("After %d training step(s), test accuracy using average "
+              "model is %g" % (TRAINING_STEPS, test_acc))
 
 
 # 主程序入口。
