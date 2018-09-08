@@ -3,7 +3,7 @@ import tensorflow as tf
 
 # 通过 tf.variable_scope 和 tf.get_variable 函数
 # 以下代码对 5.2.1 小节中定义的计算前向传播结果的函数做了一些改进。
-
+# 不再需要将所有变量都作为参数传递到不同的函数中了。
 def inference(input_tensor, reuse=False):
     # 定义第一层神经网络的变量和前向传播过程。
     with tf.variable_scope('layerl', reuse=reuse):
