@@ -29,3 +29,14 @@ with tf.Session() as sess:
     saver.save(sess, "/data/tf/model.ckpt")
     print(sess.run([v, ema.average(v)]))
     # 输出[10.0, 0.099999905]
+
+# 变量重命名直接读取变量的滑动平均值
+# 从下面程序的输出可以看出，读取的变量 V 的值实际上是上面代码中变量 V 的滑动平均值。
+# 通过这个方法，就可以使用完全一样的代码来计算滑动平均模型前向传播的结果。
+v = tf.Variable(0, dtype=tf.float32, name="v")
+# 通过变量重命名将原来变量v的滑动平均值直接赋值给V
+saver = tf.train.Saver({"v/ExponentialMovingAverage": v})
+with tf.Session() as sess:
+    saver.restore(sess, "/data/tf/model.ckpt")
+    print(sess.run(v))
+    # 输出 0.099999905，这个值就是原来模型中变量 v 的滑动平均值。
