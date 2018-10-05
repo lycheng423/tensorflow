@@ -8,7 +8,7 @@ from tensorflow.python.platform import gfile
 # 而且，将变量取值和计算图结构分成不同的文件存储有时候也不方便，
 # 于是 TensorFlow 提供了 convert_variables_to_constants 函数，
 # 通过这个函数可以将计算图中的变量及其取值通过常量的方式保存，这样整个 TensorFlow 计算 图可以统一存放在一个文件中。
-v1 = tf.Variable(tf.constant(1.0, shape=[1]), name="vl")
+v1 = tf.Variable(tf.constant(1.0, shape=[1]), name="v1")
 v2 = tf.Variable(tf.constant(2.0, shape=[1]), name="v2")
 result = v1 + v2
 
