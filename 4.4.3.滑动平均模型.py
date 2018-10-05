@@ -36,7 +36,7 @@ with tf.Session() as sess:
 
     # 更新变量 v1 的值到 5。
     sess.run(tf.assign(v1, 5))
-    # 更新v1的滑动平均值。衰减率为min{0.99, (l+step)/(10+step)= 0.1}=0.1,
+    # 更新v1的滑动平均值。衰减率为min{0.99, (1+step)/(10+step)= 0.1}=0.1,
     # 所以v1的滑动平均会被更新为0.1x0+0.9x5=4.5。
     sess.run(maintain_averages_op)
     print(sess.run([v1, ema.average(v1)]))
