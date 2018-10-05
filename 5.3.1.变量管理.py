@@ -18,4 +18,3 @@ v = tf.Variable(tf.constant(1.0, shape=[1]), name="v")
 #                                      不影响输出数量级的随机值
 # tf.zeros_initializer              将变量设置为全 0                 变量维度
 # tf.ones_initializer                将变量设置为全 1                 变量维度
-
